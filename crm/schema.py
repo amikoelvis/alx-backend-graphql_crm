@@ -3,6 +3,7 @@ from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from django.utils import timezone
 from crm.models import Customer, Product, Order
+from crm.models import Product
 from .filters import CustomerFilter, ProductFilter, OrderFilter
 
 
