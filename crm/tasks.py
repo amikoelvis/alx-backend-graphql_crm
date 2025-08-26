@@ -1,7 +1,6 @@
 from celery import shared_task
 from datetime import datetime
-from gql import gql, Client
-from gql.transport.requests import RequestsHTTPTransport
+import requests
 
 
 @shared_task
@@ -16,33 +15,34 @@ def generate_crm_report():
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_file = "/tmp/crm_report_log.txt"
 
-    try:
-        # Setup GraphQL transport
-        transport = RequestsHTTPTransport(
-            url="http://localhost:8000/graphql",
-            verify=True,
-            retries=3,
-        )
-        client = Client(transport=transport, fetch_schema_from_transport=True)
-
-        # GraphQL query for stats
-        query = gql("""
-        {
-            allCustomers {
-                totalCount
-            }
-            allOrders {
-                totalCount
-                edges {
-                    node {
-                        totalamount
-                    }
+    query = """
+    {
+        allCustomers {
+            totalCount
+        }
+        allOrders {
+            totalCount
+            edges {
+                node {
+                    totalamount
                 }
             }
         }
-        """)
+    }
+    """
 
-        result = client.execute(query)
+    try:
+        response = requests.post(
+            "http://localhost:8000/graphql",
+            json={"query": query},
+            headers={"Content-Type": "application/json"},
+        )
+        data = response.json()
+
+        if "errors" in data:
+            raise Exception(data["errors"])
+
+        result = data["data"]
 
         total_customers = result["allCustomers"]["totalCount"]
         total_orders = result["allOrders"]["totalCount"]
